@@ -112,63 +112,72 @@ def rearrange_file(file):
     # Flatten the input list
     new_file = sum(file, [])
 
-    # Step 1: Identify dot groups (start and end indices)
-    dot_groups = []
-    current_start = None
-    for index, element in enumerate(new_file):
-        if element == '.':
-            if current_start is None:
-                current_start = index
-        else:
-            if current_start is not None:
-                dot_groups.append((current_start, index - 1))
-                current_start = None
-    if current_start is not None:
-        dot_groups.append((current_start, len(new_file) - 1))
+    def define_dot_groups(new_file):
+        dot_groups = {}
 
-    # Step 2: Count number groups
-    num_groups = {}
-    for element in new_file:
-        if element != '.':
-            num_groups[element] = num_groups.get(element, 0) + 1
+        i = 0
+        while i < len(new_file):
+            # Find dot groups
+            if new_file[i] == '.':
+                start = i
+                while i < len(new_file) and new_file[i] == '.':
+                    i += 1
+                dot_groups[start] = i - start
+            else:
+                i += 1
 
-    # Sort number groups by descending number value (largest first)
-    sorted_num_groups = sorted(num_groups.items(), key=lambda x: -x[0])
+        return sorted(dot_groups.items())
+    
+    def define_num_groups(new_file):
+        num_groups = {}
+        
+        i = 0
+        while i < len(new_file):
+            # Find number groups
+            if isinstance(new_file[i], int):
+                start = i
+                current_num = new_file[i]
+                while i < len(new_file) and new_file[i] == current_num:
+                    i += 1
+                num_groups[start] = i - start
+            else:
+                i += 1
+        return sorted(num_groups.items(), reverse=True)
+    
+    sorted_dot_groups = define_dot_groups(new_file)
+    sorted_num_groups = define_num_groups(new_file)
 
-    # Step 3: Place numbers into the dot groups
-    for number, count in sorted_num_groups:
-        placed = False  # Flag to check if the number group was placed
+    for num_start, num_length in sorted_num_groups:
+        
+        # Find a suitable dot group
+        for dot_start, dot_length in sorted_dot_groups:
+            if dot_length >= num_length and num_start > dot_start:  # Check if the dot group can accommodate the number group
+                # Move the number group
+                
+                new_file[dot_start:dot_start + num_length] = [new_file[num_start]] * num_length
 
-        for i in range(len(dot_groups)):
-            start, end = dot_groups[i]
-            dot_length = end - start + 1
+                # Move the dot group to the original number group position
+                new_file[num_start:num_start + num_length] = ['.'] * num_length
 
-            if dot_length >= count:  # Only place the number if the dot group is large enough
-                # Replace dots with numbers
-                new_file[start:start + count] = [number] * count
+                # Update the dot group location
+                if dot_length > num_length:  # Some dots are left
+                    new_dot_start = dot_start + num_length
+                    remaining_dots = dot_length - num_length
 
-                # After placing the number group, replace the remaining spaces with dots
-                remaining_dots = dot_length - count
-                if remaining_dots > 0:
-                    new_file[start + count:start + count + remaining_dots] = ['.'] * remaining_dots
+                    sorted_dot_groups.remove((dot_start, dot_length))
+                    sorted_dot_groups.append((new_dot_start, remaining_dots))
+                    sorted_dot_groups.sort()
+                else:  # All dots are consumed, move the full dot group
+                    new_dot_start = num_start
+                    sorted_dot_groups.remove((dot_start, dot_length))
+                    sorted_dot_groups.append((new_dot_start, dot_length))
+                    sorted_dot_groups.sort()
+                #print(f"  Updated dot groups: {sorted_dot_groups}")
+                break
+        #print(f"State of data after processing group: {new_file}")
+    return new_file
 
-                dot_groups[i] = None  # Mark this group as fully used
-                placed = True  # Mark that we have placed the number group
-                break  # Exit the loop as the number group has been placed
-
-        # If the number group couldn't be placed, do nothing and move to the next number group
-        if not placed:
-            continue
-
-        # Remove fully used dot groups
-        dot_groups = [group for group in dot_groups if group is not None]
-
-    # Convert the list back to a string
-    return ''.join(map(str, new_file))
-
-
-
-rearrange_file(example_file)
+example_rearranged = rearrange_file(example_file)
 
 
 def check_sum_new(file):
@@ -178,11 +187,14 @@ def check_sum_new(file):
     for index, value in enumerate(file):
         
         if value == '.':
-            print("This is a dot")
             continue
         
         checksum += index*int(value)
         
     return checksum
 
-check_sum([item for sublist in new_file for item in sublist])
+check_sum_new(example_rearranged)
+
+files_mapping = create_new_file_mapping(files)
+rearranged_files = rearrange_file(files_mapping)
+check_sum_new(rearranged_files)
