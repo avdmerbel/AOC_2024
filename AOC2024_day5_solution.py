@@ -1,3 +1,4 @@
+import random
 day = 5
 
 # get the input
@@ -86,3 +87,49 @@ for update in relevant_updates:
     count += 1
 
 # part 2
+# get not correct updates
+indices_invalid = []
+for index, value in enumerate(count):
+    if value != 0:
+        indices_invalid.append(index)
+        
+invalid_updates = []
+for index in indices_invalid:
+    invalid_updates.append(updates[index])
+
+newly_ordered = []
+
+it = 0
+
+for update in invalid_updates:
+    it += 1
+    
+    print(f"updates still to go: {len(invalid_updates) - it}")
+    update_length = len(update)
+    list_of_indexes = list(range(update_length))
+
+    random.seed('this is a seed')
+    check = False
+    
+    indices_checked = []
+
+    while check is False:
+        
+        random_indices = random.sample(list_of_indexes, update_length)
+        
+        if random_indices in indices_checked:
+            continue
+        
+        indices_checked.append(random_indices)
+        
+        new_order = tuple(update[i] for i in random_indices)
+        
+        print(check_rule(new_order, rules))
+        
+        if check_rule(new_order, rules) == 0:
+            newly_ordered.append(new_order)
+            check = True
+
+middle_values = 0
+for update in newly_ordered:
+    middle_values += find_middle(update)
