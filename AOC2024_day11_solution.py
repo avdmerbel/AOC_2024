@@ -85,7 +85,8 @@ def change_stone(arrangement):
                 new_stones[new_numb] = count
         
     return new_stones
-
+import time
+begin = time.time()
 for blink in range(75):
     stones = change_stone(stones)
-    
+end = time.time()    
